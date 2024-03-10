@@ -414,15 +414,25 @@ def create_dict(labels):
 
 class Dataset(torch.utils.data.Dataset):
     def __init__(self, text, labels):
+        """
+        Setting up the dataset, store the list of texts and labels
+        """
         self.text = text
         self.labels = labels
 
     def __getitem__(self, index):
+        """
+        This method is used to get a single item from the dataset. Given an index (say, 5), it returns the 6th image and its label, processed and ready for your model.
+        """
         item = {key: torch.tensor(value[index]) for key, value in self.text.items()}
         item['labels'] = self.labels[index]
         return item
 
+
     def __len__(self):
+        """
+        It's used to know how many items are there.
+        """
         return len(self.labels)
 
 

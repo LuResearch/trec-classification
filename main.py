@@ -60,24 +60,44 @@ def train_transformer(model, dataset, output_dir, training_batch_size, eval_batc
                       num_train_epochs, weight_decay,
                       disable_tqdm=False):
     """
+    Defines the function with parameters for the model type, dataset, output directory, training and evaluation batch sizes, 
+    learning rate, number of training epochs, weight decay for regularization, and an option to disable the tqdm progress bar.
+
+    """
+
+    """
     Train and fine-tune the model using HuggingFace's PyTorch implementation and the Trainer API.
     """
 
     # training params
     model_ckpt = MODELS[model]
+    """
+    Retrieves the model checkpoint (pre-trained model identifier) from the MODELS dictionary using the given model name and prints it.
+    """
     print(model_ckpt)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     output = f"{output_dir}/{model_ckpt}-finetuned-{dataset['name']}"
+    """
+    Constructs the output directory path for saving the fine-tuned model by incorporating the model checkpoint name and dataset name.
+    """
     tokenizer = AutoTokenizer.from_pretrained(model_ckpt)
+    # Automatically select the tokenizer that fits the selected model and returns an instance of the tokenizer.
 
     # max length of 512 for ERNIE as it is not predefined in the model
     if model == "ERNIE":
         test_data, train_data, label_dict = prepare_data(dataset, tokenizer, Dataset, max_length=512)
     else:
         test_data, train_data, label_dict = prepare_data(dataset, tokenizer, Dataset)
-
+    # Prepares the dataset for training and testing.
+        
     model = AutoModelForSequenceClassification.from_pretrained(model_ckpt, num_labels=len(label_dict)).to(device)
+    #  The device could be your computer's CPU or, if available, a GPU (a much faster processor designed for heavy calculations).
+
+
     logging_steps = len(train_data) // training_batch_size
+    # It's used here to calculate how many batches of data the training process will have in total.
+    #  It represents how often you might want to log information about the training process. By setting it to the number of batches, 
+    # you're planning to log something after every epoch (an epoch is one complete pass through the full training dataset).
 
     # train
     if WANDB:
@@ -106,6 +126,11 @@ def train_transformer(model, dataset, output_dir, training_batch_size, eval_batc
                                           logging_steps=logging_steps,
                                           log_level="error",
                                           logging_dir="./logs")
+    """
+    It configures TrainingArguments for the Trainer, specifying details like output directory, learning rate, 
+    batch sizes, and logging settings. The configuration differs slightly if wandb is used, notably with the addition of report_to="wandb".
+    """
+
 
     trainer = Trainer(model=model,
                       args=training_args,
@@ -180,6 +205,11 @@ def train_mlp(dataset, output_dir, epochs, warmup_steps, learning_rate, weight_d
                               collate_fn=collate_for_mlp,
                               shuffle=True,
                               batch_size=training_batch_size)
+    # loading the training data into the model for training.
+    # The collate_fn parameter allows you to specify a function (collate_for_mlp in this case) 
+    # that determines how batches of data are combined or collated together. 
+    # This function can do things like padding your data so that each batch has the same shape, which is necessary for the model to process them. 
+
 
     model = MLP(vocab_size,
                 len(label_dict),
